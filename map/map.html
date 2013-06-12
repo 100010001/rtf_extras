@@ -1,85 +1,113 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Simple Map</title>
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+<head>
     <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+
+    <title>Events | Restore the Fourth</title>
+
     <style>
-      html, body, #map-canvas {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
+        #map {
+            width: 80%;
+            height: 600px;
+            margin: 0 auto;
+        }
     </style>
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+    <script src="//maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+
     <script>
-var geocoder;
-var map;
-var addresses = [
-  "Providence, RI", 
-  "Boston, MA",
-  // ...
-];
-var markers;
-function initialize() {
-  geocoder = new google.maps.Geocoder();
-  var mapOptions = {
-    zoom: 10,
-    mapTypeId: google.maps.MapTypeId.ROADMAP
-  };
-  map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
-      
-  if (navigator.geolocation) {
-  	navigator.geolocation.getCurrentPosition(function(position) {
-  		var pos = new google.maps.LatLng(position.coords.latitude,
-  		                                 position.coords.longitude);                               
-  	
-  		map.setCenter(pos);
-  	}, function() {
-  		handleNoGeolocation(true);  	
-  	});
-  } else {
-  	handleNoGeolocation(false);
-  }
-  
-}
+        // hardcoded list of locations
+        var locations = [
+            {address: 'Bronx, NY', bubble: 'Event info for the Bronx'},
+            {address: 'Cleveland, OH', bubble: 'Event info for Cleveland'},
+            {address: 'Dallas, TX', bubble: 'Event info for Dallas'},
+            {address: 'Las Vegas, NV', bubble: 'Event info for Vegas'},
+        ];
 
-// TODO: refactor to not add marker upon submit, but simply center
-function codeAddress() {
-  var address = document.getElementById('address').value;
-  geocoder.geocode( { 'address': address}, function(results, status) {
-    if (status == google.maps.GeocoderStatus.OK) {
-      map.setCenter(results[0].geometry.location);
-    } else {
-      alert('Geocode was not successful for the following reason: ' + status);
-    }
-  });
-}
+        // map class
+        function EventsMap () {
+            var $mapElem = $('#map');
 
-function populateMap() {
-  for (var i = 0; i < addresses.length; i++) {
-    geocoder.geocode({'address':addresses[i]}), function(results, status) {
-      if (status == google.maps.GeocoderStatus.OK) {
-      	var pos = results[0].geometry.location;
-		markers[i] = new google.maps.Marker({
-		  position: pos,
-		  map: map
-		});
-      } else {
-        alert('Geocode was not successful for the following reason: ' + status);
-      }
-    }
-  }
-}
+            // create map, default location is entire US
+            var map = new google.maps.Map($mapElem[0], {
+                zoom:       4,
+                center:     new google.maps.LatLng(37, -98),
+                mapTypeId:  google.maps.MapTypeId.ROADMAP
+            });
 
-google.maps.event.addDomListener(window, 'load', initialize);
+            var geocoder = new google.maps.Geocoder();
+
+            // list of markers and their bubbles
+            var markers = [];
+
+            // determine current location, center and zoom on it
+            this.centerOnGeolocation = function () {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+
+                        map.setCenter(pos);
+                        map.setZoom(6);
+                    }, function () {}, {timeout: 5000});
+                }
+            };
+
+            // remove open bubbles
+            this.clearBubbles = function () {
+                $.each(markers, function (i, marker) {
+                    marker.bubble.close();
+                });
+            };
+
+            // plot new markers on the map, with bubble contents
+            this.plotMarkers = function (locations) {
+                var instance = this;
+
+                $.each(locations, function (i, location) {
+                    // get lat/long of the address
+                    geocoder.geocode({address: location.address}, function(results, status) {
+                        if (status == google.maps.GeocoderStatus.OK) {
+                            // create marker
+                            var marker = new google.maps.Marker({
+                                map:        map,
+                                position:   results[0].geometry.location,
+                                title:      location.address
+                            });
+
+                            // create bubble
+                            var bubble = new google.maps.InfoWindow({
+                                content: location.bubble
+                            });
+
+                            // keep track of marker and its bubble
+                            markers.push({
+                                marker: marker,
+                                bubble: bubble
+                            });
+
+                            // event for opening bubble
+                            google.maps.event.addListener(marker, 'click', function () {
+                                instance.clearBubbles();
+                                bubble.open(map, marker);
+                            });
+                        }
+                    });
+                });
+            }
+        };
+
+        // initialize
+        $(function () {
+            var map = new EventsMap();
+
+            map.plotMarkers(locations);
+            map.centerOnGeolocation();
+        });
     </script>
-  </head>
-  <body onload="">
-    <div id="panel">
-      <input id="address" type="textbox">
-      <input type="button" value="find" onclick="codeAddress()">
-    </div>
-    <div id="map-canvas"></div>
-  </body>
+</head>
+<body>
+    <div id="map"></div>
+</body>
 </html>
