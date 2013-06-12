@@ -69,10 +69,10 @@
 <script>
     // hardcoded list of locations
     var locations = [
-        {address: 'Bronx, NY', info: 'In the Bronx, let\'s do this.'},
-        {address: 'Cleveland, OH', info: 'Cleveland\'s got it going on this July 4<sup>th</sup>!'},
-        {address: 'Dallas, TX', info: 'Dallas wants to see Big Brother go bye-bye.'},
-        {address: 'Las Vegas, NV', info: 'The people of Vegas are tired of gambling away their privacy.'}
+        {coords: [40.85, -73.866667], address: 'Bronx, NY', info: 'In the Bronx, let\'s do this.'},
+        {coords: [41.499495, -81.695408], address: 'Cleveland, OH', info: 'Cleveland\'s got it going on this July 4<sup>th</sup>!'},
+        {coords: [32.780139, -96.800451], address: 'Dallas, TX', info: 'Dallas wants to see Big Brother go bye-bye.'},
+        {coords: [36.114646, -115.172816], address: 'Las Vegas, NV', info: 'The people of Vegas are tired of gambling away their privacy.'}
     ];
 
     // map class
@@ -149,8 +149,8 @@
                             });
 
                             var address = goodLocations.length > 0 ? goodLocations[0].formatted_address : (
-                                    results.length > 0 ? results[0].formatted_address : ''
-                                    );
+                                results.length > 0 ? results[0].formatted_address : ''
+                            );
 
                             $search.val(address);
                         } else {
@@ -175,26 +175,23 @@
         // plot new markers on the map, make them interactive
         this.plotMarkers = function (locations) {
             $.each(locations, function (i, location) {
-                // get address coords
-                geocoder.geocode({address: location.address}, function(results, status) {
-                    if (status == google.maps.GeocoderStatus.OK) {
-                        // plot the marker
-                        var marker = new google.maps.Marker({
-                            map:        map,
-                            position:   results[0].geometry.location,
-                            title:      location.address
-                        });
+                var position = new google.maps.LatLng(location.coords[0], location.coords[1]);
 
-                        // event for opening info window
-                        google.maps.event.addListener(marker, 'click', function () {
-                            var content = infoWindowTemplate
-                                    .replace('{location}', location.address)
-                                    .replace('{info}', location.info);
+                // plot the marker
+                var marker = new google.maps.Marker({
+                    map:        map,
+                    position:   new google.maps.LatLng(location.coords[0], location.coords[1]),
+                    title:      location.address
+                });
 
-                            infoWindow.setContent(content);
-                            infoWindow.open(map, marker);
-                        });
-                    }
+                // event for opening info window
+                google.maps.event.addListener(marker, 'click', function () {
+                    var content = infoWindowTemplate
+                        .replace('{location}', location.address)
+                        .replace('{info}', location.info);
+
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
                 });
             });
         }
