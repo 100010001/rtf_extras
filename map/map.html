@@ -175,8 +175,6 @@
         // plot new markers on the map, make them interactive
         this.plotMarkers = function (locations) {
             $.each(locations, function (i, location) {
-                var position = new google.maps.LatLng(location.coords[0], location.coords[1]);
-
                 // plot the marker
                 var marker = new google.maps.Marker({
                     map:        map,
